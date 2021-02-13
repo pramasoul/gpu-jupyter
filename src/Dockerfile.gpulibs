@@ -18,6 +18,9 @@ RUN conda install --quiet --yes \
 #    pip install torch_nightly -f https://download.pytorch.org/whl/nightly/cu90/torch_nightly.html && \
 RUN pip install  --no-cache-dir torchviz
 
+# Install JAX, see https://github.com/google/jax
+RUN pip install --upgrade jax jaxlib==0.1.60+cuda101 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+
 
 # Clean installation
 RUN conda clean --all -f -y && \
