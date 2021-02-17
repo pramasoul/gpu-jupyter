@@ -4,6 +4,7 @@ LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
 # installation via conda leads to errors in version 4.8.2
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir "tensorflow==2.3.2" && \
+    pip install --no-cache-dir tensorflow_datasets && \
     pip install --no-cache-dir keras
 
 # Install PyTorch with dependencies
@@ -21,8 +22,12 @@ RUN pip install  --no-cache-dir torchviz
 # Install JAX, see https://github.com/google/jax
 RUN pip install --upgrade jax jaxlib==0.1.60+cuda101 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 
+# Install cupy, see https://github.com/cupy/cupy#readme
+RUN pip install --upgrade cupy-cuda101
 
 # Clean installation
 RUN conda clean --all -f -y && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
+
+ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu

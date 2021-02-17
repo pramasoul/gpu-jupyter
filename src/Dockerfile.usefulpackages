@@ -2,7 +2,9 @@ LABEL authors="Christoph Schranz <christoph.schranz@salzburgresearch.at>, Mathem
 
 USER root
 
-RUN pip install --no-cache-dir ipyleaflet plotly==4.14.3 "ipywidgets>=7.5"
+RUN pip install --no-cache-dir ipyleaflet plotly==4.14.3 "ipywidgets>=7.5" \
+    pytest-xdist pytest-benchmark mypy pynvml fastai prefetch_generator
+
 
 # Install important packages and Graphviz
 RUN set -ex \
@@ -11,7 +13,10 @@ RUN set -ex \
 ' \
  && apt-get update \
  && apt-get -y install htop apt-utils graphviz libgraphviz-dev openssh-client \
+    less apt-file file golang-1.13-go \
  && pip install --no-cache-dir $buildDeps
+
+RUN apt-file update
 
 # Install various extensions
 RUN fix-permissions $CONDA_DIR
@@ -29,10 +34,22 @@ RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
 #  jupyter nbextension enable codefolding/main
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
-# NVIDIA management library, FastAI
-RUN pip install --no-cache-dir pynvml fastai
-
 RUN fix-permissions /home/$NB_USER
+
+# install pprof so we can profile
+# See https://jax.readthedocs.io/en/latest/device_memory_profiling.html
+## First have to install a sufficient version of go, one that has strings.ReplaceAll
+## see https://www.systutorials.com/how-to-install-go-1-13-x-on-ubuntu-18-04/
+## and https://golang.org/doc/install
+
+COPY go1.15.8.linux-amd64.tar.gz .
+RUN tar -C /usr/local -xzf go1.15.8.linux-amd64.tar.gz \
+ && echo -e "export GOROOT=/usr/local/go\nexport PATH=/usr/local/go/bin:\$PATH" > /etc/profile.d/Z99-go-1.15.8.sh \
+ && . /etc/profile.d/Z99-go-1.15.8.sh
+
 
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
+ENV PATH=$PATH:$HOME/go/bin:/usr/local/go/bin
+RUN go get -u github.com/google/pprof
+EXPOSE 8088
