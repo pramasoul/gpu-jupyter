@@ -23,22 +23,22 @@ The image of this repository is available on [Dockerhub](https://hub.docker.com/
 
 1.  A computer with an NVIDIA GPU is required.
 2.  Install [Docker](https://www.docker.com/community-edition#/download) version **1.10.0+**
- and [Docker Compose](https://docs.docker.com/compose/install/) version **1.6.0+**.
+ and [Docker Compose](https://docs.docker.com/compose/install/) version **1.28.0+**.
 3.  Get access to your GPU via CUDA drivers within Docker containers.
     You can be sure that you can access your GPU within Docker, 
-    if the command `docker run --gpus all nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04 nvidia-smi`
+    if the command `docker run --gpus all nvidia/cuda:10.2-cudnn8-runtime-ubuntu18.04 nvidia-smi`
     returns a result similar to this one:
     ```bash
-    Tue Jan  5 09:38:21 2021       
+    Fri Feb 26 12:45:19 2021       
     +-----------------------------------------------------------------------------+
-    | NVIDIA-SMI 450.80.02    Driver Version: 450.80.02    CUDA Version: 10.1     |
+    | NVIDIA-SMI 460.39       Driver Version: 460.39       CUDA Version: 10.2     |
     |-------------------------------+----------------------+----------------------+
     | GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
     | Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
     |                               |                      |               MIG M. |
     |===============================+======================+======================|
     |   0  GeForce RTX 207...  Off  | 00000000:01:00.0  On |                  N/A |
-    |  0%   40C    P8     7W / 215W |    360MiB /  7974MiB |      1%      Default |
+    |  0%   43C    P8     3W / 215W |   1976MiB /  7974MiB |      3%      Default |
     |                               |                      |                  N/A |
     +-------------------------------+----------------------+----------------------+
                                                                                    
@@ -54,7 +54,7 @@ The image of this repository is available on [Dockerhub](https://hub.docker.com/
     The CUDA toolkit is not required on the host system, as it will be 
     installed within the Docker containers using [NVIDIA-docker](https://github.com/NVIDIA/nvidia-docker).
     It is also important to keep your installed CUDA version in mind, when you pull images. 
-    **You can't run images based on `nvidia/cuda:11.1` if you have only CUDA version 10.1 installed.**
+    **You can't run images based on `nvidia/cuda:11.2` if you have only CUDA version 10.2 installed.**
     Check your host's CUDA-version with `nvcc --version` and update to at least 
     the same version you want to pull.
     
@@ -62,9 +62,9 @@ The image of this repository is available on [Dockerhub](https://hub.docker.com/
     environment will be downloaded:
    ```bash
    cd your-working-directory 
-   docker run --gpus all -d -it -p 8848:8888 -v $(pwd)/data:/home/jovyan/work -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes --user root cschranz/gpu-jupyter:v1.3_cuda-10.1_ubuntu-18.04_python-only
+   docker run --gpus all -d -it -p 8848:8888 -v $(pwd)/data:/home/jovyan/work -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes --user root cschranz/gpu-jupyter:v1.3_cuda-10.2_ubuntu-18.04_python-only
    ```
-   This starts an instance with of *GPU-Jupyter* the tag `v1.3_cuda-10.1_ubuntu-18.04_python-only` at [http://localhost:8848](http://localhost:8848) (port `8484`).
+   This starts an instance with of *GPU-Jupyter* the tag `v1.3_cuda-10.2_ubuntu-18.04_python-only` at [http://localhost:8848](http://localhost:8848) (port `8484`).
    The default password is `gpu-jupyter` (previously `asdf`) which should be changed as described [below](#set-password). 
    Furthermore, data within the host's `data` directory is shared with the container.
    Other versions of GPU-Jupyter are available and listed on Dockerhub under  [Tags](https://hub.docker.com/r/cschranz/gpu-jupyter/tags?page=1&ordering=last_updated).
@@ -81,7 +81,7 @@ If you want to learn more about Jupyterlab, check out this [tutorial](https://ww
 First, it is necessary to generate the `Dockerfile` in `.build`, that is based on 
 the NIVIDA base image and the [docker-stacks](https://github.com/jupyter/docker-stacks).
 As soon as you have access to your GPU within Docker containers 
-(make sure the command `docker run --gpus all nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04 nvidia-smi` 
+(make sure the command `docker run --gpus all nvidia/cuda:10.2-cudnn8-runtime-ubuntu18.04 nvidia-smi` 
 shows your GPU statistics), you can generate the Dockerfile, build and run it.
 The following commands will start *GPU-Jupyter* on [localhost:8848](http://localhost:8848) 
 with the default password `gpu-jupyter` (previously `asdf`).
@@ -101,12 +101,16 @@ For more configurations, scroll down to [Configuration of the Dockerfile-Generat
 
 ### Start via Docker Compose
 
-The script `start-local.sh` is a wrapper for a quick configuration of the 
-underlying `docker-compose.yml`:
+Start *GPU-Jupyter* using `docker-compose.yml`:
 
 ```bash
-./start-local.sh -p 8848  # the default port is 8888
+docker-compose up --build -d
 ```
+
+This step requires a `docker-compose` version of at least `1.28.0`, 
+as the dockerfile requests GPU resources 
+(see [changelog](https://docs.docker.com/compose/release-notes/#1280)).
+To update `docker-compose`, this [discussion](https://stackoverflow.com/a/50454860) may be useful.
 
 
 ## Tracing
@@ -115,7 +119,7 @@ With these commands we can see if everything worked well:
 ```bash
 docker ps
 docker logs [service-name]  # or
-bash show-local.sh  # a env-var safe wrapper for 'docker-compose logs -f'
+docker-compose logs -f
 ```
 
 In order to stop the local deployment, run:
@@ -123,8 +127,8 @@ In order to stop the local deployment, run:
   ```bash
 docker ps
 docker rm -f [service-name]  # or
-  ./stop-local.sh
-  ```
+docker-compose down
+```
  
 
 ## Configuration
@@ -136,6 +140,11 @@ directory.
 This implies that this Dockerfile is overwritten by each generation.
 The Dockerfile-generation script `generate-Dockerfile.sh`
 has the following parameters (note that 2, 3 and 4 are exclusive): 
+
+* `-h|--help`: Show a help message.
+
+* `-p|--pw|--password`: Set the password for *GPU-Jupyter* by updating
+ the salted hashed token in `src/jupyter_notebook_config.json`.
 
 * `-c|--commit`: specify a commit or `"latest"` for the `docker-stacks`, 
 the default commit is a working one.
@@ -168,13 +177,22 @@ If an essential package is missing in the default stack, please let us know!
 
 ### Set Password
 
-Please set a new password using `src/jupyter_notebook_config.json`.
-Therefore, hash your password in the form (password)(salt) using a sha1 hash generator, e.g., the sha1 generator of [sha1-online.com](http://www.sha1-online.com/). 
-The input with the default password `gpu-jupyter` (previously `asdf`) is concatenated by an arbitrary salt `3b4b6378355` to `gpu-jupyter3b4b6378355` and is hashed to `642693b20f0a33bcad27b94293d0ed7db3408322`.
+The easiest way to set a password is by giving it as an parameter:
+```bash
+bash generate-Dockerfile.sh --password your_password
+```
+This updates the salted hashed token within `src/jupyter_notebook_config.json`.
+
+
+Another way to specify your password is to directly change the token in `src/jupyter_notebook_config.json`.
+Therefore, hash your password in the form (password)(salt) using a sha1 hash generator, e.g., 
+the sha1 generator of [sha1-online.com](http://www.sha1-online.com/). The input with the 
+default password `gpu-jupyter` (previously `asdf`) is concatenated by an arbitrary salt 
+`3b4b6378355` to `gpu-jupyter3b4b6378355` and is hashed to `642693b20f0a33bcad27b94293d0ed7db3408322`.
 
 **Never give away your own unhashed password!**
 
-Then update the config file as shown below and restart the service.
+Then update the config file as shown below, generate the Dockerfile and restart *GPU-Jupyter*.
 
 ```json
 {
@@ -321,6 +339,40 @@ In order to remove the service from the swarm, use:
 
 
 ## Issues and Contributing
+
+### Frequent Issues:
+
+- **Can't execute the bash scripts.**
+    ```bash
+    $ bash generate-Dockerfile.sh
+    generate-Dockerfile.sh: line 2: cd: $'/path/to/gpu-jupyter\r': No such file or directory
+    generate-Dockerfile.sh: line 3: $'\r': command not found
+    generate-Dockerfile.sh: line 9: $'\r': command not found
+    generate-Dockerfile.sh: line 11: syntax error near unexpected token `$'in\r''
+    generate-Dockerfile.sh: line 11: `while [[ "$#" -gt 0 ]]; do case $1 in
+    ```
+    The reason for this issue is that the line-breaks between Unix and Windows based systems are different and 
+    in the current version different.
+      
+    **Solution**: Change the line-endings of the bash scripts. This can be done e.g. in the *Notepad++* under 
+    *Edit* - *EOL Conversion*, or using `dos2unix`
+    ```bash
+    sudo apt install dos2unix
+    dos2unix generate-Dockerfile.sh
+    ```
+
+- **No GPU available - error**
+    The docker-compose start breaks with:
+    ```bash
+    ERROR: for fc8d8dfbebe9_gpu-jupyter_gpu-jupyter_1  Cannot start service gpu-jupyter: OCI runtime create failed: container_linux.go:370: starting container process caused: process_linux.go:459: container init ca
+    used: Running hook #0:: error running hook: exit status 1, stdout: , stderr: nvidia-container-cli: initialization error: driver error: failed to process request: unknown
+    ```
+    **Solution**:  
+    Check if the GPU is available on the host node via `nvidia-smi` and run with the described `docker`-commands.
+    If the error still occurs, so try there could be an issue that docker can't visualize the GPU.
+  
+
+### Contribution
 
 This project has the intention to create a robust image for CUDA-based GPU-applications, 
 which is built on top of the [docker-stacks](https://github.com/jupyter/docker-stacks). 
