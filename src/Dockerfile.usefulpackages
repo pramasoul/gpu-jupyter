@@ -5,7 +5,8 @@ USER root
 
 RUN pip install --no-cache-dir ipyleaflet plotly==4.14.3 "ipywidgets>=7.5" \
     pytest-xdist pytest-benchmark mypy pynvml fastai prefetch_generator \
-    rx trio trio-asyncio sklearn sidecar Deprecated redisai ml2rt
+    rx trio trio-asyncio sklearn sidecar Deprecated redisai ml2rt \
+    neo4j tox celery pika flower more-itertools black blackcellmagic
 
 
 # Install important packages and Graphviz
@@ -15,7 +16,7 @@ RUN set -ex \
 ' \
  && apt-get update \
  && apt-get -y install htop apt-utils graphviz iputils-ping libgraphviz-dev openssh-client \
-    less apt-file file golang-1.13-go \
+    less apt-file file curl \
  && pip install --no-cache-dir $buildDeps
 
 RUN apt-file update
@@ -60,7 +61,7 @@ RUN tar -C /usr/local -xzf go1.15.8.linux-amd64.tar.gz \
 RUN rm go1.15.8.linux-amd64.tar.gz
 
 ### Last-minute additions, down here for now to avoid build cache invalidation of expensive steps above
-RUN pip install --no-cache-dir redisgraph neo4j tox celery pika flower more-itertools black blackcellmagic
+# RUN pip install --no-cache-dir redisgraph 
 
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID

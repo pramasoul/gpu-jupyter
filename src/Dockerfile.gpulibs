@@ -3,7 +3,7 @@ LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
 # Install Tensorflow, check compatibility here: https://www.tensorflow.org/install/gpu
 # installation via conda leads to errors in version 4.8.2
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir "tensorflow==2.3.2" && \
+    pip install --no-cache-dir "tensorflow>=2.3.2" && \
     pip install --no-cache-dir tensorflow_datasets && \
     pip install --no-cache-dir keras
 
@@ -14,13 +14,24 @@ RUN conda install --quiet --yes \
 # Check compatibility here: https://pytorch.org/get-started/locally/
 
 # Installation via conda leads to errors installing cudatoolkit=10.2
-RUN conda install pytorch torchvision torchaudio cudatoolkit=10.1 -c pytorch
-# RUN pip install torch torchvision torchaudio torchviz
+# RUN conda install pytorch torchvision torchaudio cudatoolkit=10.1 -c pytorch
+# RUN conda install pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch -c conda-forge
+RUN pip install torch torchvision torchaudio torchviz
+
 # Install JAX, see https://github.com/google/jax
-RUN pip install --upgrade jax jaxlib==0.1.60+cuda101 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+RUN pip install --upgrade jax jaxlib==0.1.64+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+RUN pip install ml-collections && \
+    pip install git+https://github.com/deepmind/chex && \
+    pip install git+https://github.com/deepmind/dm-haiku && \
+    pip install git+https://github.com/google/flax && \
+    pip install git+https://github.com/google/objax && \
+    pip install git+https://github.com/deepmind/optax && \
+    pip install git+https://github.com/google/trax && \
+    #
+
 
 # Install cupy, see https://github.com/cupy/cupy#readme
-RUN pip install --upgrade cupy-cuda101
+RUN pip install --upgrade cupy-cuda111
 
 # Clean installation
 RUN conda clean --all -f -y && \
